@@ -2,7 +2,7 @@ import time
 import RPi.GPIO as GPIO
 import signal
 import sys
-import config
+import yaml
 
 def signal_handler(_sig, _frame):
     GPIO.cleanup()
@@ -13,45 +13,57 @@ def signal_handler(_sig, _frame):
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
-
 class BarrierControl():
     def __init__(self):
+        with open("config.yaml", 'r') as file:
+            self.config = yaml.safe_load(file)
         print('Initialisierung')
-        self.initial_delay = config.initial_delay
-        self.delay = config.delay
-        print(str(self.delay))
-        self.pin_move_up = 37
-        self.pin_move_down = 38
         GPIO.setmode(GPIO.BOARD)
-        GPIO.setup(self.pin_move_up, GPIO.OUT)
-        GPIO.setup(self.pin_move_down, GPIO.OUT)
-        GPIO.output(self.pin_move_up, True)
-        GPIO.output(self.pin_move_down, True)
-        self.move_down(self.initial_delay)
+        GPIO.setup(self.config['gpio_pin_up'], GPIO.OUT)
+        GPIO.setup(self.config['gpio_pin_down'], GPIO.OUT)
+        GPIO.setup(self.config['gpio_pin_button'], GPIO.IN)
+        self.status = "down"
 
-    def move_down(self, delay = self.delay):
+    def move_barrier(self, channel):
+        if "down" == self.status:
+            self.move_up(delay = self.config['delay'])
+        elif "up" == self.status:
+            self.move_down(delay = self.config['delay'])
+        else:
+            raise ValueError
+
+    def move_down(self, *, delay):
         print("Schranke fährt runter.")
-        GPIO.output(self.pin_move_down, False)
+        self._close_relais_down()
         time.sleep(delay)
         print("Schranke ist unten.")
-        GPIO.output(self.pin_move_down, True)
+        self._open_relais_down()
+        self.status = "down"
 
-    def move_up(self, delay = self.delay):
+    def move_up(self, *, delay):
         print("Schranke fährt hoch.")
-        GPIO.output(self.pin_move_up, False)
-        time.sleep(1)
+        self._close_relais_up()
+        time.sleep(delay)
         print("Schranke ist oben.")
-        GPIO.output(self.pin_move_up, True)
+        self._open_relais_up()
+        self.status = "up"
 
-    def run(self):
-        while True:
-            input('.')
-            self.move_up()
-            input('.')
-            self.move_down()
+    def _close_relais_up(self):
+        GPIO.output(self.config['gpio_pin_up'], False)
 
+    def _open_relais_up(self):
+        GPIO.output(self.config['gpio_pin_up'], True)
+    
+    def _close_relais_down(self):
+        GPIO.output(self.config['gpio_pin_down'], False)
+    
+    def _open_relais_down(self):
+        GPIO.output(self.config['gpio_pin_down'], True)
 
 if __name__ == '__main__':
+    with open("config.yaml", 'r') as file:
+        config = yaml.safe_load(file)
     b = BarrierControl()
-    b.run()
-        
+    GPIO.add_event_detect(config['gpio_pin_button'], GPIO.RISING, callback=b.move_barrier, bouncetime=config['bouncetime'])
+    signal.pause()
+

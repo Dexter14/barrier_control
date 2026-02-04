@@ -1,0 +1,5 @@
+delay: 2
+bouncetime: 250
+gpio_pin_up: 38
+gpio_pin_down: 37
+gpio_pin_button: 36
