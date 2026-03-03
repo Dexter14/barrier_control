@@ -2,6 +2,7 @@ import time
 import RPi.GPIO as GPIO
 import signal
 import sys
+from threading import Timer
 
 def signal_handler(_sig, _frame):
     GPIO.cleanup()
@@ -18,34 +19,53 @@ class BarrierControl:
         GPIO.setup(37, GPIO.OUT)
         GPIO.setup(38, GPIO.OUT)
         GPIO.setup(36, GPIO.IN)
-        GPIO.output(37, True)
-        GPIO.output(38, True)
-        self.status = "down"
+        self._stop_moving("down")
+        self.timer = None
 
     def move_barrier(self, _channel):
         if "down" == self.status:
-            self.move_up(2)
+            if self.timer != None:
+                self.timer.cancel()
+                self._stop_moving("up")
+                return
+            self.move_up(5)
         elif "up" == self.status:
-            self.move_down(2)
-        else:
+            if self.timer != None:
+                self.timer.cancel()
+                self._stop_moving("down")
+                return
+            self.move_down(5)
+        else:   
            raise ValueError
 
-
     def move_up(self, delay):
+        self.timer = Timer(delay, self._stop_moving, args = ["up"])
         print("Schranke fährt hoch.")
-        GPIO.output(37, False)
-        time.sleep(delay)
-        print("Schranke ist oben.")
-        GPIO.output(37, True)
-        self.status = "up"
+        self._start_up()
+        self.timer.start()
+        
 
     def move_down(self, delay):
+        self.timer =Timer(delay, self._stop_moving, args = ["down"])
         print("Schranke fährt runter.")
+        self._start_down()
+        self.timer.start()
+
+    def _start_up(self):
+        GPIO.output(37, False)
+
+    def _start_down(self):
         GPIO.output(38, False)
-        time.sleep(delay)
-        print("Schranke ist unten.")
+  
+    def _stop_moving(self, status):
+        GPIO.output(37, True)
         GPIO.output(38, True)
-        self.status = "down"
+        if "up" == status:
+            print("Schranke ist oben.")
+        elif "down" == status:
+            print("Schranke ist unten.")
+        self.status = status
+        self.timer = None
 
 if __name__ == '__main__':
     bc = BarrierControl()
