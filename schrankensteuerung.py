@@ -2,6 +2,7 @@ import time
 import RPi.GPIO as GPIO
 import signal
 import sys
+import yaml
 from threading import Timer
 
 def signal_handler(_sig, _frame):
@@ -14,13 +15,18 @@ signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
 class BarrierControl:
-    def __init__(self):
+    def __init__(self, config):
+        print(str(config))
         GPIO.setmode(GPIO.BOARD)
-        GPIO.setup(37, GPIO.OUT)
-        GPIO.setup(38, GPIO.OUT)
-        GPIO.setup(36, GPIO.IN)
-        self._stop_moving("down")
+        GPIO.setup(config['pin_down'], GPIO.OUT)
+        GPIO.setup(config['pin_up'], GPIO.OUT)
+        GPIO.setup(config['pin_button'], GPIO.IN)
+        self.time_up = config['time_up']
+        self.time_down = config['time_down']
+        self.pin_up = config['pin_up']
+        self.pin_down = config['pin_down']
         self.timer = None
+        self._stop_moving("down")
 
     def move_barrier(self, _channel):
         if "down" == self.status:
@@ -28,13 +34,13 @@ class BarrierControl:
                 self.timer.cancel()
                 self._stop_moving("up")
                 return
-            self.move_up(5)
+            self.move_up(self.time_up)
         elif "up" == self.status:
             if self.timer != None:
                 self.timer.cancel()
                 self._stop_moving("down")
                 return
-            self.move_down(5)
+            self.move_down(self.time_down)
         else:   
            raise ValueError
 
@@ -52,14 +58,14 @@ class BarrierControl:
         self.timer.start()
 
     def _start_up(self):
-        GPIO.output(37, False)
+        GPIO.output(self.pin_down, False)
 
     def _start_down(self):
-        GPIO.output(38, False)
+        GPIO.output(self.pin_up, False)
   
     def _stop_moving(self, status):
-        GPIO.output(37, True)
-        GPIO.output(38, True)
+        GPIO.output(self.pin_down, True)
+        GPIO.output(self.pin_up, True)
         if "up" == status:
             print("Schranke ist oben.")
         elif "down" == status:
@@ -68,7 +74,9 @@ class BarrierControl:
         self.timer = None
 
 if __name__ == '__main__':
-    bc = BarrierControl()
-    GPIO.add_event_detect(36, GPIO.RISING, callback=bc.move_barrier, bouncetime=250)
+    with open('config.yaml', 'r') as file:
+        config = yaml.safe_load(file)
+    bc = BarrierControl(config)
+    GPIO.add_event_detect(config['pin_button'], GPIO.RISING, callback=bc.move_barrier, bouncetime=250)
     signal.pause()
  
