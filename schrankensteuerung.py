@@ -1,3 +1,4 @@
+#! /usr/bin/python
 import time
 import RPi.GPIO as GPIO
 import signal
@@ -20,13 +21,20 @@ class BarrierControl:
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(config['pin_down'], GPIO.OUT)
         GPIO.setup(config['pin_up'], GPIO.OUT)
-        GPIO.setup(config['pin_button'], GPIO.IN)
+        GPIO.setup(config['pin_garage'], GPIO.OUT)
+        GPIO.setup(config['pin_button'], GPIO.IN, pull_up_down = GPIO.PUD_UP)
         self.time_up = config['time_up']
         self.time_down = config['time_down']
         self.pin_up = config['pin_up']
         self.pin_down = config['pin_down']
+        self.pin_garage = config['pin_garage']
         self.timer = None
-        self._stop_moving("down")
+        self.move_down(self.time_down)
+
+    def open_close_garage(self):
+        GPIO.output(self.pin_garage, False)
+        time.sleep(1)
+        GPIO.output(self.pin_garage, True)
 
     def move_barrier(self, _channel):
         if "down" == self.status:
@@ -49,7 +57,6 @@ class BarrierControl:
         print("Schranke fährt hoch.")
         self._start_up()
         self.timer.start()
-        
 
     def move_down(self, delay):
         self.timer =Timer(delay, self._stop_moving, args = ["down"])
@@ -58,10 +65,12 @@ class BarrierControl:
         self.timer.start()
 
     def _start_up(self):
-        GPIO.output(self.pin_down, False)
+        if self._stafty_check():
+            GPIO.output(self.pin_down, False)
 
     def _start_down(self):
-        GPIO.output(self.pin_up, False)
+        if self._stafty_check():
+            GPIO.output(self.pin_up, False)
   
     def _stop_moving(self, status):
         GPIO.output(self.pin_down, True)
@@ -73,10 +82,15 @@ class BarrierControl:
         self.status = status
         self.timer = None
 
+    def _stafty_check(self):
+        state_down = GPIO.input(self.pin_down)
+        state_up = GPIO.input(self.pin_up)
+        return state_down == state_up == 1
+
 if __name__ == '__main__':
     with open('config.yaml', 'r') as file:
         config = yaml.safe_load(file)
     bc = BarrierControl(config)
-    GPIO.add_event_detect(config['pin_button'], GPIO.RISING, callback=bc.move_barrier, bouncetime=250)
+    GPIO.add_event_detect(config['pin_button'], GPIO.FALLING, callback=bc.move_barrier, bouncetime=config['bouncetime'])
     signal.pause()
  
