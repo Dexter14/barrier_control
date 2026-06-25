@@ -9,7 +9,10 @@
     <div class="text-zentrum">
         <!-- Variable anzeigen -->
         <h1>Schrankensteuerung</h1>
-        <p><br></p>    
+        <p><br></p>
+        {% if nachricht %}
+        <p><strong>{{ nachricht }}</strong></p>
+        {% endif %}
         <form action="/klick_barrier" method="POST">
             <button type="submit" style="
                 background-color: #DC3545; 

@@ -87,6 +87,24 @@ class BarrierControl:
         state_up = GPIO.input(self.pin_up)
         return state_down == state_up == 1
 
+
+# Modulweite BarrierControl-Instanz (für Web-App-Zugriff)
+bc = None
+
+
+def create_barrier_control(config_path='config.yaml'):
+    """Create and return a BarrierControl instance from a YAML config.
+
+    This function also stores the instance in the module-level `bc` variable
+    so other modules (z. B. die Web-App) darauf zugreifen können.
+    """
+    global bc
+    with open(config_path, 'r') as file:
+        config = yaml.safe_load(file)
+    bc = BarrierControl(config)
+    GPIO.add_event_detect(config['pin_button'], GPIO.FALLING, callback=bc.move_barrier, bouncetime=config.get('bouncetime', 200))
+
+
 if __name__ == '__main__':
     with open('config.yaml', 'r') as file:
         config = yaml.safe_load(file)
