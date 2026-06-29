@@ -3,6 +3,7 @@ import time
 import RPi.GPIO as GPIO
 import signal
 import sys
+import traceback
 import yaml
 from threading import Timer
 
@@ -29,6 +30,7 @@ class BarrierControl:
         self.pin_down = config['pin_down']
         self.pin_garage = config['pin_garage']
         self.timer = None
+        self.status = 'moving_down'
         self.move_down(self.time_down)
 
     def open_close_garage(self):
@@ -49,8 +51,8 @@ class BarrierControl:
                 self._stop_moving("down")
                 return
             self.move_down(self.time_down)
-        else:   
-           raise ValueError
+        else:
+            raise ValueError('Schrankenstatus nicht initialisiert.')
 
     def move_up(self, delay):
         self.timer = Timer(delay, self._stop_moving, args = ["up"])
@@ -103,6 +105,7 @@ def create_barrier_control(config_path='config.yaml'):
         config = yaml.safe_load(file)
     bc = BarrierControl(config)
     GPIO.add_event_detect(config['pin_button'], GPIO.FALLING, callback=bc.move_barrier, bouncetime=config.get('bouncetime', 200))
+    return bc
 
 
 if __name__ == '__main__':

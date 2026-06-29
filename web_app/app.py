@@ -1,7 +1,8 @@
-from flask import Flask, render_template, redirect, url_for
+from flask import Flask, render_template, jsonify
 import os
 import sys
 import traceback
+
 
 app = Flask(__name__)
 
@@ -14,6 +15,8 @@ try:
     config_path = os.path.join(ROOT, 'config.yaml')
     try:
         bc = create_barrier_control(config_path)
+        print(str(bc))
+        print("Alles gut")
     except Exception:
         print("Fehler beim Erstellen von BarrierControl:")
         traceback.print_exc()
@@ -23,18 +26,41 @@ except Exception:
     traceback.print_exc()
     bc = None
 
+@app.route('/')
+def index():
+    return _render_index()
+
+
+@app.route('/status', methods=['GET'])
+def status():
+    return jsonify({'barrier_status': _current_barrier_status()})
+
+
+def _current_barrier_status():
+    if bc and hasattr(bc, 'status'):
+        return bc.status
+    return 'down'
+
+
+def _render_index(nachricht=None):
+    return render_template(
+        "index.html",
+        nachricht=nachricht,
+        barrier_status=_current_barrier_status()
+    )
+
 @app.route("/klick_barrier", methods=["POST"])
 def button_barrier():
+    print(str(bc))
     ergebnis_text = "Der Button Schranke wurde erfolgreich verarbeitet!"
     if bc:
         try:
             bc.move_barrier(None)
-            ergebnis_text = "Schranke: Aktion ausgelöst."
         except Exception as e:
             ergebnis_text = f"Fehler beim Auslösen der Schranke: {e}"
     else:
         ergebnis_text = "BarrierControl nicht initialisiert."
-    return render_template("index.html", nachricht=ergebnis_text)
+    return _render_index(nachricht=ergebnis_text)
 
 @app.route("/klick_tor", methods=["POST"])
 def button_tor():
@@ -47,11 +73,11 @@ def button_tor():
             ergebnis_text = f"Fehler beim Garagentor: {e}"
     else:
         ergebnis_text = "BarrierControl nicht initialisiert."
-    return render_template("index.html", nachricht=ergebnis_text)
+    return _render_index(nachricht=ergebnis_text)
 
 def start():
     # Startet den Server im lokalen Netzwerk auf Port 5000
-    app.run(host='192.168.178.43', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
 
 if __name__ == '__main__':
     start()

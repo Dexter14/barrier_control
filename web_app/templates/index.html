@@ -4,38 +4,144 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flask Beispiel App</title>
+    <style>
+    body {
+        background-image: url("{{ url_for('static', filename='images/background.png') }}");
+        background-size: cover;
+        background-attachment: fixed;
+        background-position: center;
+        background-repeat: no-repeat;
+        margin: 0;
+        min-height: 100vh;
+        font-family: Arial, sans-serif;
+        color: white;
+    }
+
+    .button-row {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+        padding-top: 20px;
+    }
+
+    .button-row form {
+        margin: 0;
+    }
+
+    .circle-button {
+        width: 130px;
+        height: 130px;
+        border: none;
+        border-radius: 50%;
+        color: white;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        line-height: 1.2;
+        padding: 10px;
+    }
+
+    .circle-button.barrier-up {
+        background-color: #35dc51;
+    }
+
+    .circle-button.barrier-down {
+        background-color: #dc3545;
+    }
+
+    .circle-button.gate {
+        background-color: #35c9dc;
+    }
+
+    .text-zentrum {
+        text-align: center;
+        margin-top: 30px;
+        padding: 0 16px 24px;
+    }
+
+    .nachricht-bottom {
+        position: fixed;
+        left: 50%;
+        bottom: 16px;
+        transform: translateX(-50%);
+        text-align: center;
+        background: rgba(0, 0, 0, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        border-radius: 10px;
+        padding: 10px 14px;
+        max-width: calc(100vw - 32px);
+        box-sizing: border-box;
+    }
+
+    .nachricht-bottom p {
+        margin: 0;
+    }
+    </style>
+
 </head>
 <body>
     <div class="text-zentrum">
-        <!-- Variable anzeigen -->
         <h1>Schrankensteuerung</h1>
-        <p><br></p>
-        {% if nachricht %}
-        <p><strong>{{ nachricht }}</strong></p>
-        {% endif %}
+    </div>
+    <div class="button-row">
         <form action="/klick_barrier" method="POST">
-            <button type="submit" style="
-                background-color: #DC3545; 
-                color: white; 
-                font-size: 20px; 
-                padding: 15px 30px; 
-                border: none; 
-                border-radius: 8px; 
-                cursor: pointer;"> Schranke
-            </button>
+            <button id="barrier-button" type="submit" class="circle-button {% if barrier_status == 'up' %}barrier-up{% else %}barrier-down{% endif %}">Schranke</button>
         </form>
-        <p><br></p>
         <form action="/klick_tor" method="POST">
-            <button type="submit" style="
-                background-color: #35dc51; 
-                color: white; 
-                font-size: 20px; 
-                padding: 15px 30px; 
-                border: none; 
-                border-radius: 8px; 
-                cursor: pointer;"> Garagentor
-            </button>
+            <button type="submit" class="circle-button gate">Garagentor</button>
         </form>
     </div>
+
+    {% if nachricht %}
+    <div id="nachricht-bottom" class="nachricht-bottom">
+        <p><strong>{{ nachricht }}</strong></p>
+    </div>
+    {% endif %}
+
+    <script>
+    (function () {
+        const nachrichtBox = document.getElementById('nachricht-bottom');
+        if (nachrichtBox) {
+            setTimeout(function () {
+                nachrichtBox.remove();
+            }, 5000);
+        }
+
+        const barrierButton = document.getElementById('barrier-button');
+        if (!barrierButton) {
+            return;
+        }
+
+        function applyBarrierStatus(status) {
+            barrierButton.classList.remove('barrier-up', 'barrier-down');
+            if (status === 'up') {
+                barrierButton.classList.add('barrier-up');
+            } else {
+                barrierButton.classList.add('barrier-down');
+            }
+        }
+
+        async function refreshBarrierStatus() {
+            try {
+                const response = await fetch('/status', { cache: 'no-store' });
+                if (!response.ok) {
+                    return;
+                }
+                const data = await response.json();
+                applyBarrierStatus(data.barrier_status);
+            } catch (_err) {
+                // Bei Verbindungsfehlern still weiter versuchen.
+            }
+        }
+
+        refreshBarrierStatus();
+        setInterval(refreshBarrierStatus, 2000);
+    })();
+    </script>
 </body>
 </html>
