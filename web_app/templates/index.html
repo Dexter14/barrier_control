@@ -34,6 +34,7 @@
         height: 130px;
         border: none;
         border-radius: 50%;
+        opacity: 0.8;
         color: white;
         font-size: 16px;
         font-weight: bold;
@@ -52,6 +53,10 @@
 
     .circle-button.barrier-down {
         background-color: #dc3545;
+    }
+
+    .circle-button.barrier-moving {
+        background-color: #f08a24;
     }
 
     .circle-button.gate {
@@ -90,7 +95,7 @@
     </div>
     <div class="button-row">
         <form action="/klick_barrier" method="POST">
-            <button id="barrier-button" type="submit" class="circle-button {% if barrier_status == 'up' %}barrier-up{% else %}barrier-down{% endif %}">Schranke</button>
+            <button id="barrier-button" type="submit" class="circle-button {% if barrier_status == 'up' %}barrier-up{% elif barrier_status == 'down' %}barrier-down{% else %}barrier-moving{% endif %}">{% if barrier_status == 'up' %}Schranken oben{% elif barrier_status == 'down' %}Schranke unten{% elif barrier_status == 'moving_up' %}Schranke fährt hoch{% elif barrier_status == 'moving_down' %}Schranke fährt runter{% else %}Schranke{% endif %}</button>
         </form>
         <form action="/klick_tor" method="POST">
             <button type="submit" class="circle-button gate">Garagentor</button>
@@ -118,11 +123,22 @@
         }
 
         function applyBarrierStatus(status) {
-            barrierButton.classList.remove('barrier-up', 'barrier-down');
+            barrierButton.classList.remove('barrier-up', 'barrier-down', 'barrier-moving');
             if (status === 'up') {
                 barrierButton.classList.add('barrier-up');
+                barrierButton.textContent = 'Schranken oben';
+            } else if (status === 'down') {
+                barrierButton.classList.add('barrier-down');
+                barrierButton.textContent = 'Schranke unten';
+            } else if (status === 'moving_up') {
+                barrierButton.classList.add('barrier-moving');
+                barrierButton.textContent = 'Schranke fährt hoch';
+            } else if (status === 'moving_down') {
+                barrierButton.classList.add('barrier-moving');
+                barrierButton.textContent = 'Schranke fährt runter';
             } else {
                 barrierButton.classList.add('barrier-down');
+                barrierButton.textContent = 'Schranke';
             }
         }
 

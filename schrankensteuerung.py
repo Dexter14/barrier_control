@@ -55,12 +55,14 @@ class BarrierControl:
             raise ValueError('Schrankenstatus nicht initialisiert.')
 
     def move_up(self, delay):
+        self.status = "moving_up"
         self.timer = Timer(delay, self._stop_moving, args = ["up"])
         print("Schranke fährt hoch.")
         self._start_up()
         self.timer.start()
 
     def move_down(self, delay):
+        self.status = "moving_down"
         self.timer =Timer(delay, self._stop_moving, args = ["down"])
         print("Schranke fährt runter.")
         self._start_down()

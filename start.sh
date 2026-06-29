@@ -1,2 +1,2 @@
 #! /bin/bash
-python /home/laura/Schrankensteuerung/schrankensteuerung.py
+python3 /home/laura/web_app/app.py
