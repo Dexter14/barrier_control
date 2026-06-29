@@ -1,6 +1,16 @@
 time_up: 3
 time_down: 5
 bouncetime: 500
+oled_startup_message: "HAPPY BIRTHDAY!"
+oled_second_message: >
+  Zu deinem 70. Geburtstag wünschen wir Dir alles Gute und Gesundheit.
+  Laura, Chiara, Renate und Marcus.                               
+  Ich bin deine neue Schrankensteuerung.
+  Nach Installation kann sowohl mit dem Smartphone als auch per Knopf
+  deine Schranke gesteuert werden. Per Smartphone kann zusätzlich noch das
+  Garagentor betätigt werden.                              
+oled_startup_duration: 1
+oled_second_message_speed: 0.01
 pin_up: 38
 pin_down: 37
 pin_button: 36
