@@ -9,7 +9,7 @@ oled_second_message: >
   Nach Installation kann sowohl mit dem Smartphone als auch per Knopf
   deine Schranke gesteuert werden. Per Smartphone kann zusätzlich noch das
   Garagentor betätigt werden.                              
-oled_startup_duration: 1
+oled_startup_duration: 5
 oled_second_message_speed: 0.01
 pin_up: 38
 pin_down: 37
